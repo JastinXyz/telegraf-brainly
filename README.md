@@ -13,3 +13,4 @@ Sebuah bot Telegram untuk mencari jawaban di https://brainly.co.id (khusus regio
 https://t.me/brainlyidsearch_bot
 
 # Preview
+![aktif](https://media.giphy.com/media/ry0WJ9PTTClH8cuAIl/giphy.gif)
