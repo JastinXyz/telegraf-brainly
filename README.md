@@ -10,7 +10,7 @@ Sebuah bot Telegram untuk mencari jawaban di https://brainly.co.id (khusus regio
 - enjoy
 
 # Demo
-https://t.me/brainlyidsearch_bot
+https://t.me/brainlyidsearch_bot (kadang down)
 
 # Preview
 ![aktif](https://media.giphy.com/media/ry0WJ9PTTClH8cuAIl/giphy.gif)
