@@ -1,13 +1,14 @@
 require('dotenv').config();
 const { BOT_TOKEN } = process.env;
 
-const { Telegraf, session } = require('telegraf');
+const { Telegraf } = require('telegraf');
 const { Keyboard, Key } = require('telegram-keyboard')
 const { Brainly } = require("brainly-scraper-v2");
 const brain = new Brainly("id");
+var data;
 
 const bot = new Telegraf(BOT_TOKEN);
-bot.use(session());
+
 bot.start((ctx) => {
   ctx.reply(makeText(ctx, 'basic'), { parse_mode: 'HTML', reply_markup: Keyboard.make([
         Key.url('🐈 Source Code on Github', 'https://github.com/JastinXyz/telegraf-brainly'),
@@ -28,26 +29,30 @@ bot.command('github', (ctx) => {
 })
 
 bot.on('text', (ctx) => {
-  brain.search(ctx.update.message.text, "id").then((x) => {
-    // console.log(x)
-    ctx.session = {
-      data: {
+  ctx.reply("🔍 Sedang Mencari...").then((xx) => {
+    brain.search(ctx.update.message.text, "id").then(async(x) => {
+      
+      if(x.length === 0) {
+        ctx.telegram.editMessageText(xx.chat.id, xx.message_id, undefined, "👀 Tidak ditemukan jawaban apapun! coba cari menggunakan kata kunci lain!")
+      } else {
+        data = {
           q: ctx.update.message.text,
           a: x,
           ke: 0
         }
+       ctx.telegram.editMessageText(xx.chat.id, xx.message_id, undefined, makeText(data), { parse_mode: "HTML", reply_markup: data.a.length !== 1? Keyboard.inline(['➡ Next']).reply_markup : null })
       }
-    ctx.reply(makeText(ctx.session.data), { parse_mode: "HTML", reply_markup: Keyboard.inline(['➡ Next']).reply_markup })
-  }).catch((e) => {
-    ctx.reply("👀 Oops! Terjadi error saat mencari! Coba lagi...")
-    console.log(e)
-  });
+    }).catch((e) => {
+       ctx.telegram.editMessageText(xx.chat.id, xx.message_id, undefined, "👀 Oops! Terjadi error saat mencari! Coba lagi...")
+      console.log(e)
+    });
+  })
 });
 
 bot.action('➡ Next', (ctx) => {
   try {
-    ctx.session.data.ke++;
-    ctx.editMessageText(makeText(ctx.session.data), { parse_mode: "HTML", reply_markup: Keyboard.inline(inlinearr(ctx.session.data.ke)).reply_markup })
+    data.ke++;
+    ctx.editMessageText(makeText(data), { parse_mode: "HTML", reply_markup: Keyboard.inline(inlinearr(data.ke, data.a.length)).reply_markup })
   } catch(e) {
     console.log(e)
     ctx.reply("👀 Oops! Terjadi error! Coba lagi...")
@@ -56,8 +61,8 @@ bot.action('➡ Next', (ctx) => {
 
 bot.action('⬅ Back', (ctx) => {
   try {
-    ctx.session.data.ke--;
-    ctx.editMessageText(makeText(ctx.session.data), { parse_mode: "HTML", reply_markup: Keyboard.inline(inlinearr(ctx.session.data.ke)).reply_markup })
+    data.ke--;
+    ctx.editMessageText(makeText(data), { parse_mode: "HTML", reply_markup: Keyboard.inline(inlinearr(data.ke, data.a.length)).reply_markup })
   } catch(e) {
     console.log(e)
     ctx.reply("👀 Oops! Terjadi error! Coba lagi...")
@@ -68,8 +73,8 @@ bot.launch().then(() => {
   console.log("ready!")
 });
 
-function inlinearr(n) {
-  return n >= 1 ? n == 9 ? ['⬅ Back'] : ['⬅ Back', '➡ Next'] : ['➡ Next']
+function inlinearr(n, max) {
+  return n >= 1 ? n == parseInt(max-1) ? ['⬅ Back'] : ['⬅ Back', '➡ Next'] : ['➡ Next']
 }
 
 function makeText(data, type = "jawaban") {
@@ -79,7 +84,7 @@ function makeText(data, type = "jawaban") {
   } else {
     if(data.a) {
       let jawaban = data.a[data.ke].answers[0];
-      return `<b>${data.a[data.ke].question.content}</b>\n\n<i>✋ Terdapat <b>${data.a[data.ke].answers.length}</b> Jawaban! Berikut kami tampilkan jawaban teratas:</i>\n<code>${jawaban.content.length > 1024 ? jawaban.content.slice(0, 1024) + `... dan ${jawaban.content.length - 1024} karakter lagi.` : jawaban.content}</code>\n\n${jawaban.isBest? "🌟 Best\n" : ""}👤 Rank Penjawab: ${jawaban.author.rank? jawaban.author.rank : "Tidak Diketahui"}\n🔗 https://brainly.co.id/tugas/${data.a[data.ke].question.id}\n🔢 ${data.ke + 1}/${data.a.length}`
+      return `<b>${data.a[data.ke].question.content > 2048 ? data.a[data.ke].question.content.slice(0, 2048) + `... dan ${data.a[data.ke].question.content - 2048} karakter lagi.` : data.a[data.ke].question.content}</b>\n\n<i>✋ Terdapat <b>${data.a[data.ke].answers.length}</b> Jawaban! Berikut kami tampilkan jawaban teratas:</i>\n<code>${jawaban.content.length > 1024 ? jawaban.content.slice(0, 1024) + `... dan ${jawaban.content.length - 1024} karakter lagi.` : jawaban.content}</code>\n\n${jawaban.isBest? "🌟 Best\n" : ""}👤 Rank Penjawab: ${jawaban.author? jawaban.author.rank? jawaban.author.rank : "Tidak Diketahui" : "Tidak Diketahui"}\n🔗 https://brainly.co.id/tugas/${data.a[data.ke].question.id}\n🔢 ${data.ke + 1}/${data.a.length}`
     } else {
       return `Tidak ditemukan jawaban apapun.`
     }
